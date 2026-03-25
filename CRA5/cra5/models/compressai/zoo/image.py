@@ -300,7 +300,14 @@ def _load_model(
         url = model_urls[architecture][metric][quality]
         # 检查是本地路径还是URL
         if url.startswith("http://") or url.startswith("https://"):
-            state_dict = load_state_dict_from_url(url, progress=progress)
+            import os
+            _ckpt_base = "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints"
+            _local_dir = os.path.join(_ckpt_base, architecture, metric)
+            _local_path = os.path.join(_local_dir, os.path.basename(url))
+            if os.path.exists(_local_path):
+                state_dict = torch.load(_local_path, map_location="cpu", weights_only=False)
+            else:
+                state_dict = load_state_dict_from_url(url, model_dir=_local_dir, progress=progress)
         else:
             # 本地路径，直接使用torch.load
             state_dict = torch.load(url, map_location="cpu", weights_only=False)

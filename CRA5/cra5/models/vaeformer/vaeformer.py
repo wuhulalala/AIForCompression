@@ -47,7 +47,7 @@ from cra5.models.compressai.models.base import (
     get_scale_table,
 )
 from cra5.models.compressai.models.utils import conv, deconv
-from cra5.models.vaeformer.vit_nlc import Encoder, Decoder,HyperPriorEncoder, HyperPriorDecoder, interpolate_pos_embed
+from cra5.models.vaeformer.vit_nlc import Encoder, Decoder,HyperPriorEncoder, HyperPriorDecoder
 from cra5.models.vaeformer.modules.distributions import DiagonalGaussianDistribution
 from cra5.models.compressai.models.google import ScaleHyperprior
 from collections import OrderedDict
@@ -90,159 +90,6 @@ class VAEformer(CompressionModel):
                  ignore_keys:list=[], 
                  lower_dim= False,
                  **kwargs):
-        if model_version == 620:
-            embed_dim=256
-            z_channels=256
-            y_channels=1024
-            lower_dim=True
-            sample_posterior =False
-            pretrained_vae = None #'./exp/comp/era5_autoencoder_ps10_159v/iter_150000.pth',
-            frozen_encoder=False
-            ddconfig=dict(
-                arch = 'vit_large',
-                pretrained_model = '',
-                patch_size=(11,10),
-                patch_stride=(10,10),
-                in_chans=268,
-                out_chans=268,
-                kwargs=dict(
-                    z_dim =  None,
-                    learnable_pos= True,
-                    window= True,
-                    window_size = [(12, 12), (8, 8), (4, 4)],
-                    interval = 4,
-                    drop_path_rate= 0.,
-                    round_padding= True,
-                    pad_attn_mask= True , # to_do: ablation
-                    test_pos_mode= 'learnable_simple_interpolate', # to_do: ablation
-                    lms_checkpoint_train= True,
-                    img_size= (240, 240)
-                ),
-            )
-            priorconfig = dict(
-                pretrained_model = '', # '../PretrainedModels/maevit/mae_pretrain_vit_large.pth',
-                patch_size=(4,4),
-                in_chans=256,
-                out_chans=256,
-                kwargs=dict(
-                    z_dim = 256,
-                    embed_dim=360,
-                    depth=8,
-                    num_heads=5,
-                    interval=1,
-                    learnable_pos= True,
-                    window= False,
-                    drop_path_rate= 0.,
-                    round_padding= True,
-                    pad_attn_mask= True , # to_do: ablation
-                    test_pos_mode= 'learnable_simple_interpolate', # to_do: ablation
-                    lms_checkpoint_train= False,
-                    img_size= (24,24)
-                ),
-            )
-        if model_version == 622:
-            embed_dim=256
-            z_channels=256
-            y_channels=1024
-            lower_dim=True
-            sample_posterior =False
-            pretrained_vae = None #'./exp/comp/era5_autoencoder_ps10_159v/iter_150000.pth',
-            frozen_encoder=False
-            ddconfig=dict(
-                arch = 'vit_large',
-                pretrained_model = '',
-                patch_size=(8, 8),
-                patch_stride=(4,4),
-                in_chans=268,
-                out_chans=268,
-                kwargs=dict(
-                    z_dim =  None,
-                    learnable_pos= True,
-                    window= True,
-                    window_size = [(8, 8), (4, 4), (2, 2)],
-                    interval = 4,
-                    drop_path_rate= 0.,
-                    round_padding= True,
-                    pad_attn_mask= True , # to_do: ablation
-                    test_pos_mode= 'learnable_simple_interpolate', # to_do: ablation
-                    lms_checkpoint_train= True,
-                    img_size= (240, 240)
-                ),
-            )
-            priorconfig = dict(
-                pretrained_model = '', # '../PretrainedModels/maevit/mae_pretrain_vit_large.pth',
-                patch_size=(4,4),
-                in_chans=256,
-                out_chans=256,
-                kwargs=dict(
-                    z_dim = 256,
-                    embed_dim=360,
-                    depth=8,
-                    num_heads=5,
-                    interval=1,
-                    learnable_pos= True,
-                    window= False,
-                    drop_path_rate= 0.,
-                    round_padding= True,
-                    pad_attn_mask= True , # to_do: ablation
-                    test_pos_mode= 'learnable_simple_interpolate', # to_do: ablation
-                    lms_checkpoint_train= False,
-                    img_size= (59,59)
-                ),
-            )
-
-
-        if model_version == 621:
-            embed_dim=256
-            z_channels=256
-            y_channels=1024
-            lower_dim=True
-            sample_posterior =False
-            pretrained_vae = None #'./exp/comp/era5_autoencoder_ps10_159v/iter_150000.pth',
-            frozen_encoder=False
-            ddconfig=dict(
-                arch = 'vit_large',
-                pretrained_model = '',
-                patch_size=(10, 10),
-                patch_stride=(10,10),
-                in_chans=268,
-                out_chans=268,
-                kwargs=dict(
-                    z_dim =  None,
-                    learnable_pos= True,
-                    window= True,
-                    window_size = [(8, 8), (4, 4), (2, 2)],
-                    interval = 4,
-                    drop_path_rate= 0.,
-                    round_padding= True,
-                    pad_attn_mask= True , # to_do: ablation
-                    test_pos_mode= 'learnable_simple_interpolate', # to_do: ablation
-                    lms_checkpoint_train= True,
-                    img_size= (240, 240)
-                ),
-            )
-            priorconfig = dict(
-                pretrained_model = '', # '../PretrainedModels/maevit/mae_pretrain_vit_large.pth',
-                patch_size=(4,4),
-                in_chans=256,
-                out_chans=256,
-                kwargs=dict(
-                    z_dim = 256,
-                    embed_dim=360,
-                    depth=8,
-                    num_heads=5,
-                    interval=1,
-                    learnable_pos= True,
-                    window= False,
-                    drop_path_rate= 0.,
-                    round_padding= True,
-                    pad_attn_mask= True , # to_do: ablation
-                    test_pos_mode= 'learnable_simple_interpolate', # to_do: ablation
-                    lms_checkpoint_train= False,
-                    img_size= (24,24)
-                ),
-            )
-
         if model_version == 268:
             embed_dim=256
             z_channels=256
@@ -322,22 +169,18 @@ class VAEformer(CompressionModel):
     def from_state_dict(cls, state_dict):
         """Return a new model instance from `state_dict`."""
 
+        variable_num = state_dict["backbone.g_a.patch_embed.proj.weight"].size(1)
         
-        net = cls(621)
-        # net.update(force=True)
-
-          
         new_state_dict = OrderedDict()
         for k, v in state_dict.items():
-            if 'pos_embed' in k:
-                print(f"Skipping {k} - will use freshly initialized pos_embed for BraTS dimensions")
-                continue
-            elif 'kl_loss.logvar' not in k:
+            if 'kl_loss.logvar' not in k:
                 new_state_dict[k.replace("backbone.", "")] = v
             
 
+        net = cls(variable_num)
+        # net.update(force=True)
         
-        net.load_state_dict(new_state_dict, strict=False)
+        net.load_state_dict(new_state_dict)
         
         return net
 
@@ -451,9 +294,7 @@ class VAEformer(CompressionModel):
     def decode_latent(self, y, type='quantized'):
         if self.lower_dim:
             y_hat = self.post_quant_conv(y)
-        else:
-            y_hat = y
-        
+
         x_hat = self.g_s(y_hat)
         
         return x_hat
@@ -560,4 +401,3 @@ class VAEformer(CompressionModel):
 
     def get_last_layer(self):
         return self.g_s.final.weight
-

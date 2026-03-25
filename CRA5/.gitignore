@@ -1,6 +1,5 @@
 *.bin
 *.inc
-*.sh
 *.tar.gz
 cra5/version.py
 
@@ -28,3 +27,21 @@ cra5/*.so
 # big data
 data/
 evaluation/
+
+# pycache
+__pycache__/
+
+# results
+results/
+
+# custom scripts not to upload
+download_era5_test.py
+run_all_compressai.py
+run_compressai.sh
+run_cra5_forward.sh
+summary.json
+test_brats_cra5_format.py
+train_brats_finetune.py
+train_era5_compressai.py
+visualize_brats_reconstruction.py
+visualize_compressai_results.py

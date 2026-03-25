@@ -16,20 +16,24 @@ from cra5.models.compressai.zoo import vaeformer_pretrained
 
 current_file_path = os.path.abspath(__file__)
 directory_path = os.path.dirname(current_file_path)
-work_directory = '/root/work/cra5'
+work_directory = '/data/run01/scxj523/zsh/project/AIForCompression/CRA5'
 
 
 class cra5_api():
-    def __init__(self, 
+    def __init__(self,
                  config=f'{directory_path}/cra5_268v_config.py',
                  local_root=f'{work_directory}/data',
                  device = 'cuda' if torch.cuda.is_available() else 'cpu',
                  ceph_cfg={},
+                 enable_download=False,
                  ):
-        self.device = device 
+        self.device = device
         print(f'The serving device is {self.device}')
         self.cfg = Config.fromfile(config)
-        self.era5 = era5_downloader(f'{directory_path}/era5_config.py')
+        if enable_download:
+            self.era5 = era5_downloader(f'{directory_path}/era5_config.py')
+        else:
+            self.era5 = None
         self.level_mapping = [self.cfg.total_levels.index(val) \
             for val in self.cfg.pressure_level if val in self.cfg.total_levels ]
         self.mean, self.std = self.get_mean_std()
