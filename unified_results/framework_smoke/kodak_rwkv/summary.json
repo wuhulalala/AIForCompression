@@ -1,0 +1,44 @@
+[
+  {
+    "model_name": "RwkvCompress",
+    "model_id": "RwkvCompress_lalic-q1",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/rwkvcompress/mse/lalic-q1.pth",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "RwkvCompress",
+    "model_id": "RwkvCompress_lalic-q2",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/rwkvcompress/mse/lalic-q2.pth",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "RwkvCompress",
+    "model_id": "RwkvCompress_lalic-q3",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/rwkvcompress/mse/lalic-q3.pth",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "RwkvCompress",
+    "model_id": "RwkvCompress_lalic-q4",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/rwkvcompress/mse/lalic-q4.pth",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "RwkvCompress",
+    "model_id": "RwkvCompress_lalic-q5",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/rwkvcompress/mse/lalic-q5.pth",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "RwkvCompress",
+    "model_id": "RwkvCompress_lalic-q6",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/rwkvcompress/mse/lalic-q6.pth",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  }
+]

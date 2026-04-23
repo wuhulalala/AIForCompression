@@ -1,0 +1,27 @@
+# checkpoints
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# logs
+logs/
+*.log
+
+# python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# jupyter
+.ipynb_checkpoints/
+
+# wandb / tmp
+wandb/
+tmp/
+temp/
+
+# system
+.DS_Store

@@ -1,0 +1,86 @@
+[
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-base_0.0018.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-base/mse/0.0018.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-base_0.0035.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-base/mse/0.0035.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-base_0.0067.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-base/mse/0.0067.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-base_0.013.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-base/mse/0.013.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-base_0.025.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-base/mse/0.025.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-base_0.0483.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-base/mse/0.0483.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-large_0.0018.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-large/mse/0.0018.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-large_0.0035.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-large/mse/0.0035.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-large_0.0067.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-large/mse/0.0067.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-large_0.013.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-large/mse/0.013.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-large_0.025.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-large/mse/0.025.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  {
+    "model_name": "LIC-HPCM",
+    "model_id": "LIC-HPCM-large_0.0483.pth",
+    "metric": "mse",
+    "checkpoint": "/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/lic-hpcm/hpcm-large/mse/0.0483.pth.tar",
+    "error": "CUDA error: CUDA-capable device(s) is/are busy or unavailable\nSearch for `cudaErrorDevicesUnavailable' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  }
+]
