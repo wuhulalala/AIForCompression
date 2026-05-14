@@ -3,7 +3,9 @@ import faulthandler
 import gc
 import json
 import math
+import multiprocessing
 import os
+import signal
 import sys
 import time
 from pathlib import Path
@@ -104,6 +106,10 @@ def bitstream_size(bit_stream):
 def calculate_psnr(original, reconstructed):
     orig64 = original.astype(np.float64)
     recon64 = reconstructed.astype(np.float64)
+    if not np.isfinite(orig64).all():
+        raise ValueError("original contains non-finite values")
+    if not np.isfinite(recon64).all():
+        raise ValueError("reconstructed contains non-finite values")
     mse = float(np.mean((orig64 - recon64) ** 2))
     if mse < 1e-12:
         return float("inf"), mse
@@ -128,19 +134,43 @@ def load_dcmvc(model_path, device):
 
 
 def load_dcvc(model_path, device):
-    root = "/data/run01/scxj523/zsh/project/AIForCompression/models/DCVC"
+    root = "/data/run01/scxj523/zsh/project/AIForCompression/models/DCVC/DCVC-family/DCVC-FM"
     cpp_root = os.path.join(root, "src", "cpp")
     clear_src_modules()
     sys.path.insert(0, root)
     sys.path.insert(0, cpp_root)
     from src.models.image_model import DMCI
-    from src.utils.common import get_state_dict
+    from src.utils.stream_helper import get_state_dict
 
     model = DMCI()
     model.load_state_dict(get_state_dict(model_path))
     model = model.to(device).eval()
-    model.update(None)
-    model.half()
+    model.update(force=True)
+    return model
+
+
+def load_dcvc_rt(model_path, device):
+    dcvc_root = "/data/run01/scxj523/zsh/project/AIForCompression/models/DCVC"
+    cpp_root = os.path.join(dcvc_root, "src", "cpp")
+    ext_root = os.path.join(dcvc_root, "src", "layers", "extensions", "inference")
+    clear_src_modules()
+    sys.path.insert(0, dcvc_root)
+    sys.path.insert(0, cpp_root)
+    sys.path.insert(0, ext_root)
+    from src.models.image_model import DMCI
+
+    ckpt = torch.load(model_path, map_location=torch.device('cpu'))
+    if "state_dict" in ckpt:
+        ckpt = ckpt['state_dict']
+    if "net" in ckpt:
+        ckpt = ckpt["net"]
+    from torch.nn.modules.utils import consume_prefix_in_state_dict_if_present
+    consume_prefix_in_state_dict_if_present(ckpt, prefix="module.")
+
+    model = DMCI()
+    model.load_state_dict(ckpt)
+    model = model.to(device).eval()
+    model.update()
     return model
 
 
@@ -153,6 +183,8 @@ def clear_src_modules():
         if not path.endswith("/models/DCMVC")
         and not path.endswith("/models/DCVC")
         and not path.endswith("/models/DCVC/src/cpp")
+        and not path.endswith("/models/DCVC/DCVC-family/DCVC-FM")
+        and not path.endswith("/models/DCVC/DCVC-family/DCVC-FM/src/cpp")
     ]
 
 
@@ -173,13 +205,29 @@ def test_dcmvc(model, x, q_index):
 
 @torch.no_grad()
 def test_dcvc(model, x, qp):
-    x_pad, orig_h, orig_w = pad_replicate(x.half(), 64)
+    x_pad, orig_h, orig_w = pad_replicate(x.float(), 64)
     enc_start = time.time()
     compressed = model.compress(x_pad, qp)
     if x.is_cuda:
         torch.cuda.synchronize()
     enc_end = time.time()
-    sps = {"height": x_pad.shape[-2], "width": x_pad.shape[-1], "ec_part": 0}
+    sps = {"height": x_pad.shape[-2], "width": x_pad.shape[-1], "qp": qp}
+    decompressed = model.decompress(compressed["bit_stream"], sps)
+    if x.is_cuda:
+        torch.cuda.synchronize()
+    dec_end = time.time()
+    return decompressed["x_hat"].float()[:, :, :orig_h, :orig_w], bitstream_size(compressed["bit_stream"]), enc_end - enc_start, dec_end - enc_end
+
+
+@torch.no_grad()
+def test_dcvc_rt(model, x, qp):
+    x_pad, orig_h, orig_w = pad_replicate(x.float(), 64)
+    enc_start = time.time()
+    compressed = model.compress(x_pad, qp)
+    if x.is_cuda:
+        torch.cuda.synchronize()
+    enc_end = time.time()
+    sps = {"height": x_pad.shape[-2], "width": x_pad.shape[-1], "qp": qp, "ec_part": 0}
     decompressed = model.decompress(compressed["bit_stream"], sps, qp)
     if x.is_cuda:
         torch.cuda.synchronize()
@@ -191,11 +239,12 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Test video intra/image models on full 268-channel ERA5 data.")
     parser.add_argument("--data_root", default="/data/run01/scxj523/zsh/project/Data/ERA5/2024")
     parser.add_argument("--output_dir", default="/data/run01/scxj523/zsh/project/AIForCompression/unified_results/video_intra_era5")
-    parser.add_argument("--model", choices=["DCMVC", "DCVC", "both"], default="both")
+    parser.add_argument("--model", choices=["DCMVC", "DCVC", "DCVC_FM", "DCVC_RT", "both"], default="both")
     parser.add_argument("--gpu", default="0")
     parser.add_argument("--max_samples", type=int, default=1)
     parser.add_argument("--dcmvc_checkpoint", default="/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/dcmvc/cvpr2023_image_psnr.pth.tar")
-    parser.add_argument("--dcvc_checkpoint", default="/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/dcvc-rt/cvpr2025_image.pth.tar")
+    parser.add_argument("--dcvc_checkpoint", default="/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/dcvc-fm/cvpr2024_image.pth.tar")
+    parser.add_argument("--dcvc_rt_checkpoint", default="/data/run01/scxj523/zsh/project/AIForCompression/checkpoints/dcvc-rt/cvpr2025_image.pth.tar")
     return parser.parse_args()
 
 
@@ -220,11 +269,17 @@ def main():
             lambda: load_dcmvc(args.dcmvc_checkpoint, device),
             [(f"DCMVC_Intra_q{i}", lambda m, x, i=i: test_dcmvc(m, x, i)) for i in range(4)],
         ))
-    if args.model in ("DCVC", "both"):
+    if args.model in ("DCVC", "DCVC_FM", "both"):
         model_groups.append((
-            "DCVC",
+            "DCVC-FM",
             lambda: load_dcvc(args.dcvc_checkpoint, device),
-            [(f"DCVC_RT_Intra_q{q}", lambda m, x, q=q: test_dcvc(m, x, q)) for q in (0, 21, 42, 63)],
+            [(f"DCVC_FM_Intra_q{q}", lambda m, x, q=q: test_dcvc(m, x, q)) for q in (0, 21, 42, 63)],
+        ))
+    if args.model == "DCVC_RT":
+        model_groups.append((
+            "DCVC-RT",
+            lambda: load_dcvc_rt(args.dcvc_rt_checkpoint, device),
+            [(f"DCVC_RT_Intra_q{q}", lambda m, x, q=q: test_dcvc_rt(m, x, q)) for q in (0, 21, 42, 63)],
         ))
 
     summary = []

@@ -9,11 +9,12 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from compression_pipeline.adapters.era5 import ERA5Adapter
 from compression_pipeline.adapters.kodak import KodakAdapter
+from compression_pipeline.adapters.tomo_h5 import TomoH5Adapter
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Prepare canonical samples/views for supported compression datasets.")
-    parser.add_argument("--dataset", choices=["era5", "kodak"], required=True)
+    parser.add_argument("--dataset", choices=["era5", "kodak", "tomo"], required=True)
     parser.add_argument("--data_root", required=True)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--max_samples", type=int, default=-1)
@@ -30,6 +31,15 @@ def main():
     if args.dataset == "kodak":
         adapter = KodakAdapter(args.data_root)
         samples = list(adapter.iter_samples(max_samples=args.max_samples))
+        manifest = adapter.manifest()
+    elif args.dataset == "tomo":
+        adapter = TomoH5Adapter(args.data_root)
+        samples = list(
+            adapter.iter_samples(
+                max_samples=args.max_samples,
+                resolution=tuple(args.resolution) if args.resolution else None,
+            )
+        )
         manifest = adapter.manifest()
     else:
         adapter = ERA5Adapter(args.data_root)

@@ -23,5 +23,11 @@ wandb/
 tmp/
 temp/
 
+# Local Python virtual environments
+.venvs/
+
+# Experiment outputs
+*results*/
+
 # system
 .DS_Store

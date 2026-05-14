@@ -6,6 +6,7 @@ from typing import Iterator
 import numpy as np
 from PIL import Image
 
+from compression_pipeline.adapters.era5 import center_crop_chw
 from compression_pipeline.canonical import CanonicalSample, DatasetManifest
 
 
@@ -63,4 +64,30 @@ class KodakAdapter:
                     "channels": 3,
                 },
             )
+
+    def load_sequence(
+        self,
+        max_samples: int | None = None,
+        resolution: tuple[int, int] | None = None,
+    ) -> tuple[np.ndarray, list[str]]:
+        """Load Kodak images as a pseudo-time sequence for CAESAR models.
+
+        Returns:
+            sequence_vthw: [C, T, H, W] float32 array (C=3 for RGB)
+            timestamps: fake ISO timestamps with 1-hour intervals
+        """
+        samples = list(self.iter_samples(max_samples=max_samples))
+        if not samples:
+            raise ValueError(f"No Kodak images found in {self.data_root}")
+
+        arrays = []
+        for sample in samples:
+            arr = sample.array.astype(np.float32)
+            if resolution is not None:
+                arr = center_crop_chw(arr, resolution)
+            arrays.append(arr)
+
+        timestamps = [f"2024-01-01T{i:02d}:00:00" for i in range(len(samples))]
+        tchw = np.stack(arrays, axis=0)
+        return np.transpose(tchw, (1, 0, 2, 3)), timestamps
 

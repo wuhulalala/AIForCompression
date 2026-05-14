@@ -45,7 +45,9 @@ def build_image_groups(sample: CanonicalSample, group_size: int = 3) -> list[Ima
             pad = np.repeat(chunk[-1:], group_size - actual_channels, axis=0)
             chunk = np.concatenate([chunk, pad], axis=0)
 
-        tensor, normalization = _normalize_for_image_model(chunk, sample.kind, sample.metadata)
+        tensor, normalization = _normalize_for_image_model(
+            chunk, sample.kind, sample.metadata, source_channel_start=start
+        )
         groups.append(
             ImageGroupView(
                 sample_id=sample.sample_id,
@@ -94,11 +96,37 @@ def _normalize_for_image_model(
     chunk: np.ndarray,
     sample_kind: str,
     metadata: dict[str, Any],
+    source_channel_start: int = 0,
 ) -> tuple[np.ndarray, dict[str, Any]]:
     if sample_kind == "image" and chunk.dtype == np.uint8:
         return chunk.astype(np.float32) / 255.0, {"type": "uint8_255", "dtype": "uint8"}
 
     float_chunk = chunk.astype(np.float32, copy=False)
+    n_ch = float_chunk.shape[0]
+
+    # Z-score normalization if pre-computed mean/std available
+    zscore_mean = metadata.get("zscore_mean")
+    zscore_std = metadata.get("zscore_std")
+    if zscore_mean is not None and zscore_std is not None:
+        # Two-stage: z-score → minmax → [0,1]  (like CRA5/CompressAI)
+        mean_arr = np.array(zscore_mean[source_channel_start:source_channel_start + n_ch], dtype=np.float32).reshape(-1, 1, 1)
+        std_arr = np.maximum(np.array(zscore_std[source_channel_start:source_channel_start + n_ch], dtype=np.float32).reshape(-1, 1, 1), 1e-8)
+        # Stage 1: z-score
+        zscored = (float_chunk - mean_arr) / std_arr
+        # Stage 2: per-channel minmax on z-scored data
+        zmin = zscored.reshape(n_ch, -1).min(axis=1).reshape(-1, 1, 1).astype(np.float32)
+        zmax = zscored.reshape(n_ch, -1).max(axis=1).reshape(-1, 1, 1).astype(np.float32)
+        zscale = np.maximum(zmax - zmin, 1e-8).astype(np.float32)
+        normalized = (zscored - zmin) / zscale
+        return normalized, {
+            "type": "per_channel_zscore",
+            "dtype": metadata.get("dtype", str(chunk.dtype)),
+            "z_min": zmin,
+            "z_scale": zscale,
+            "zscore_mean": mean_arr,
+            "zscore_std": std_arr,
+        }
+
     cmin = float_chunk.reshape(float_chunk.shape[0], -1).min(axis=1).reshape(-1, 1, 1)
     cmax = float_chunk.reshape(float_chunk.shape[0], -1).max(axis=1).reshape(-1, 1, 1)
     scale = np.maximum(cmax - cmin, 1e-8).astype(np.float32)
@@ -116,6 +144,11 @@ def _denormalize_image_group(chw: np.ndarray, normalization: dict[str, Any]) -> 
         return np.rint(np.clip(chw, 0.0, 1.0) * 255.0).astype(np.uint8)
     if norm_type == "per_channel_minmax":
         return (chw.astype(np.float32) * normalization["scale"][: chw.shape[0]] + normalization["min"][: chw.shape[0]]).astype(np.float32)
+    if norm_type == "per_channel_zscore":
+        # Reverse minmax: [0,1] → z-score space
+        z_val = chw.astype(np.float32) * normalization["z_scale"][: chw.shape[0]] + normalization["z_min"][: chw.shape[0]]
+        # Reverse z-score: z-score → original
+        return (z_val * normalization["zscore_std"][: chw.shape[0]] + normalization["zscore_mean"][: chw.shape[0]]).astype(np.float32)
     raise ValueError(f"Unsupported normalization type: {norm_type}")
 
 

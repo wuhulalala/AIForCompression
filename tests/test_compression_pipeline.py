@@ -14,7 +14,7 @@ from compression_pipeline.canonical import CanonicalSample
 from compression_pipeline.cra5_runner import run_cra5_sample
 from compression_pipeline.metrics import base_metrics
 from compression_pipeline.runner import run_image_grouped_sample
-from compression_pipeline.torch_codecs import CodecResult
+from compression_pipeline.torch_codecs import CodecResult, ForwardLikelihoodCodec
 from compression_pipeline.views import build_caesar_view, build_image_groups, reconstruct_from_groups
 
 
@@ -129,6 +129,28 @@ class CompressionPipelineTest(unittest.TestCase):
         self.assertEqual(result["decode_time_total"], 1.0)
         self.assertEqual(result["encode_time_per_group_avg"], 0.25)
         self.assertEqual(result["decode_time_per_group_avg"], 0.5)
+
+    def test_forward_likelihood_codec_uses_likelihoods_to_estimate_bitstream_size(self):
+        torch = __import__("torch")
+
+        class FakeForwardModel:
+            def __call__(self, x):
+                likelihood = torch.full_like(x, 0.5)
+                return {
+                    "x_hat": x.clone(),
+                    "likelihoods": {"y": likelihood},
+                }
+
+        codec = ForwardLikelihoodCodec(FakeForwardModel(), device="cpu", divisor=2)
+        tensor = np.full((1, 3, 2, 2), 0.5, dtype=np.float32)
+
+        result = codec.roundtrip(tensor)
+
+        self.assertEqual(result.reconstruction.shape, (1, 3, 2, 2))
+        np.testing.assert_allclose(result.reconstruction, tensor, atol=1e-6)
+        self.assertEqual(result.bitstream_bytes, 2)
+        self.assertGreaterEqual(result.encode_time, 0.0)
+        self.assertEqual(result.decode_time, 0.0)
 
     def test_caesar_view_uses_variable_sample_time_height_width_layout(self):
         sequence = np.zeros((4, 5, 2, 3), dtype=np.float32)

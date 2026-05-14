@@ -12,11 +12,35 @@ from compression_pipeline.era5_constants import ERA5_CHANNELS, PRESSURE_LEVELS, 
 
 
 class ERA5Adapter:
-    """Reads paired ERA5 pressure/single NetCDF files into canonical CHW samples."""
+    """Reads paired ERA5 pressure/single NetCDF files into canonical CHW samples.
+    Uses two-stage normalization: z-score + per-channel minmax (like CRA5/CompressAI).
+    """
 
     def __init__(self, data_root: str | Path, dataset_id: str = "era5_2024") -> None:
         self.data_root = Path(data_root)
         self.dataset_id = dataset_id
+
+    def _get_day_zscore(self, date_str: str):
+        import json
+        norm_dir = Path("/data/run01/scxj523/zsh/project/AIForCompression/normalization")
+        date_key = date_str.replace("-", "_") + "_000000"
+        if not hasattr(self, '_zscore_cache'):
+            self._zscore_cache = {}
+        if date_str in self._zscore_cache:
+            return self._zscore_cache[date_str]
+        with open(norm_dir / f"mean_std_{date_key}.json") as fp:
+            p = json.load(fp)
+        with open(norm_dir / f"mean_std_single_{date_key}.json") as fp:
+            s = json.load(fp)
+        mean_list, std_list = [], []
+        for var in ['z', 'q', 't', 'u', 'v', 'w', 'r']:
+            mean_list.extend(p['mean'].get(var, []))
+            std_list.extend(p['std'].get(var, []))
+        for var in ['t2m', 'u10', 'v10', 'msl', 'tp', 'tcwv', 'tcc', 'u100', 'v100']:
+            mean_list.append(s['mean'].get(var, 0))
+            std_list.append(s['std'].get(var, 1))
+        self._zscore_cache[date_str] = (mean_list, std_list)
+        return mean_list, std_list
 
     def find_pairs(self) -> list[tuple[Path, Path, str]]:
         if not self.data_root.exists():
@@ -86,22 +110,29 @@ class ERA5Adapter:
         for pressure, single, timestamp in pairs:
             array = limit_channels(self.read_pair(pressure, single, max_channels=max_channels), max_channels)
             array = center_crop_chw(array, resolution)
+            meta = {
+                "pressure_path": str(pressure),
+                "single_path": str(single),
+                "timestamp": timestamp,
+                "dtype": "float32",
+                "channel_names": era5_channel_names()[: array.shape[0]],
+                "height": int(array.shape[1]),
+                "width": int(array.shape[2]),
+                "channels": int(array.shape[0]),
+            }
+            # Two-stage normalization: add per-day z-score params
+            date_str = timestamp[:10]
+            z_mean, z_std = self._get_day_zscore(date_str)
+            n_ch = array.shape[0]
+            meta["zscore_mean"] = z_mean[:n_ch]
+            meta["zscore_std"] = z_std[:n_ch]
             yield CanonicalSample(
                 dataset_id=self.dataset_id,
                 sample_id=timestamp,
                 kind="scientific_field",
                 array=array,
                 layout="channel_height_width",
-                metadata={
-                    "pressure_path": str(pressure),
-                    "single_path": str(single),
-                    "timestamp": timestamp,
-                    "dtype": "float32",
-                    "channel_names": era5_channel_names()[: array.shape[0]],
-                    "height": int(array.shape[1]),
-                    "width": int(array.shape[2]),
-                    "channels": int(array.shape[0]),
-                },
+                metadata=meta,
             )
 
     def load_sequence(

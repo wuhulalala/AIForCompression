@@ -75,19 +75,19 @@ class VAEformer(CompressionModel):
     encoder and last layer of the hyperprior decoder)
     """
 
-    def __init__(self, 
+    def __init__(self,
                  model_version,
-                 embed_dim=None, 
+                 embed_dim=None,
                  z_channels=None,
                  y_channels=None,
-                 sample_posterior=None, 
-                 pretrained_vae=None, 
-                 frozen_encoder=None, 
-                 ddconfig=None, 
+                 sample_posterior=None,
+                 pretrained_vae=None,
+                 frozen_encoder=None,
+                 ddconfig=None,
                  priorconfig=None,
-                 rate_distortion_loss=None, 
-                 kl_loss=None, 
-                 ignore_keys:list=[], 
+                 rate_distortion_loss=None,
+                 kl_loss=None,
+                 ignore_keys:list=[],
                  lower_dim= False,
                  **kwargs):
         if model_version == 268:

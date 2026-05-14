@@ -12,21 +12,31 @@ if str(PROJECT_ROOT) not in sys.path:
 import torch
 
 from compression_pipeline.adapters.era5 import ERA5Adapter
+from compression_pipeline.adapters.hurricane import HurricaneAdapter
+from compression_pipeline.adapters.isotropic1024 import Isotropic1024Adapter
 from compression_pipeline.adapters.kodak import KodakAdapter
+from compression_pipeline.adapters.lysozyme import LysozymeAdapter
+from compression_pipeline.adapters.nyx import NYXAdapter
+from compression_pipeline.adapters.s2c import S2CAdapter
+from compression_pipeline.adapters.shanghai_xray import ShanghaiXrayAdapter
+from compression_pipeline.adapters.tomo_h5 import TomoH5Adapter
+from compression_pipeline.adapters.uvg import UVGAdapter
 from compression_pipeline.caesar_runner import CAESAR_N_FRAMES, run_caesar_sequence
 from compression_pipeline.cra5_runner import run_cra5_sample
 from compression_pipeline.model_registry import image_model_jobs
 from compression_pipeline.runner import run_image_grouped_sample
-from compression_pipeline.torch_codecs import CompressAILikeCodec
+from compression_pipeline.torch_codecs import CompressAILikeCodec, DCVCRTCodec, DCMVCCodec, ForwardLikelihoodCodec
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run supported codecs on ERA5 or Kodak through the shared data adapter.")
-    parser.add_argument("--dataset", choices=["era5", "kodak"], required=True)
+    parser.add_argument("--dataset", choices=["era5", "kodak", "tomo", "uvg", "hurricane", "s2c", "nyx", "shanghai_xray", "isot1024", "lysozyme"], required=True)
     parser.add_argument("--data_root", required=True)
     parser.add_argument("--project_root", default=str(PROJECT_ROOT))
     parser.add_argument("--output_dir", required=True)
-    parser.add_argument("--models", nargs="+", default=None, help="Subset: CRA5 DCAE WeConvene LIC_TCM LIC-HPCM RwkvCompress caesar_v caesar_d")
+    parser.add_argument("--models", nargs="+", default=None, help="Subset: CRA5 DCAE WeConvene LIC_TCM LIC-HPCM RwkvCompress DCVC-RT DCMVC caesar_v caesar_d")
+    parser.add_argument("--image_eval_mode", choices=["real", "forward"], default="real",
+                        help="For image models, use true compress/decompress or forward+likelihood evaluation.")
     parser.add_argument("--max_model_jobs", type=int, default=-1, help="Limit number of checkpoint/model jobs after filtering; useful for smoke tests.")
     parser.add_argument("--gpu", default=None, help="Optional CUDA_VISIBLE_DEVICES override. Leave unset under Slurm to use the allocated GPU.")
     parser.add_argument("--max_samples", type=int, default=1)
@@ -35,7 +45,12 @@ def parse_args():
     parser.add_argument("--caesar_root", default=str(PROJECT_ROOT / "models" / "CAESAR"))
     parser.add_argument("--caesar_ckpt_dir", default=str(PROJECT_ROOT / "checkpoints" / "caesar"))
     parser.add_argument("--caesar_start_index", type=int, default=0)
-    parser.add_argument("--caesar_eb", type=float, default=1e-4)
+    parser.add_argument("--caesar_eb", type=float, nargs="+", default=[1e-4],
+                        help="CAESAR error bound(s); pass multiple to sweep, e.g. --caesar_eb 1e-4 5e-4 1e-3")
+    parser.add_argument("--tomo_group_frames", type=int, default=1,
+                        help="Stack N consecutive tomo frames as N-channel input (e.g. 3 for pseudo-RGB DCVC-RT/DCMVC evaluation).")
+    parser.add_argument("--tile_size", type=int, default=None,
+                        help="Tile large images into tile_size x tile_size blocks (for s2c dataset).")
     parser.add_argument("--batch_size", type=int, default=8)
     return parser.parse_args()
 
@@ -43,6 +58,33 @@ def parse_args():
 def iter_dataset_samples(args):
     if args.dataset == "kodak":
         yield from KodakAdapter(args.data_root).iter_samples(max_samples=args.max_samples)
+        return
+    if args.dataset == "tomo":
+        yield from TomoH5Adapter(args.data_root, group_frames=args.tomo_group_frames).iter_samples(
+            max_samples=args.max_samples,
+            resolution=tuple(args.resolution) if args.resolution else None,
+        )
+        return
+    if args.dataset == "uvg":
+        yield from UVGAdapter(args.data_root).iter_samples(max_samples=args.max_samples)
+        return
+    if args.dataset == "hurricane":
+        yield from HurricaneAdapter(args.data_root).iter_samples(max_samples=args.max_samples)
+        return
+    if args.dataset == "s2c":
+        yield from S2CAdapter(args.data_root, tile_size=args.tile_size).iter_samples(max_samples=args.max_samples)
+        return
+    if args.dataset == "nyx":
+        yield from NYXAdapter(args.data_root).iter_samples(max_samples=args.max_samples)
+        return
+    if args.dataset == "shanghai_xray":
+        yield from ShanghaiXrayAdapter(args.data_root).iter_samples(max_samples=args.max_samples)
+        return
+    if args.dataset == "isot1024":
+        yield from Isotropic1024Adapter(args.data_root).iter_samples(max_samples=args.max_samples)
+        return
+    if args.dataset == "lysozyme":
+        yield from LysozymeAdapter(args.data_root).iter_samples(max_samples=args.max_samples)
         return
     yield from ERA5Adapter(args.data_root).iter_samples(
         max_samples=args.max_samples,
@@ -68,41 +110,86 @@ def main():
     non_caesar_models = None if requested_models is None else requested_models - {"CAESAR", "caesar_v", "caesar_d", "CAESAR-V", "CAESAR-D"}
 
     if caesar_models:
-        if args.dataset != "era5":
-            raise SystemExit("CAESAR requires --dataset era5 because it needs a continuous ERA5 time sequence")
+        if args.dataset == "era5":
+            sequence, timestamps = ERA5Adapter(args.data_root).load_sequence(
+                max_samples=args.max_samples,
+                max_channels=args.max_channels,
+                resolution=tuple(args.resolution) if args.resolution else None,
+            )
+        elif args.dataset == "kodak":
+            sequence, timestamps = KodakAdapter(args.data_root).load_sequence(
+                max_samples=args.max_samples,
+                resolution=tuple(args.resolution) if args.resolution else None,
+            )
+        elif args.dataset == "tomo":
+            sequence, timestamps = TomoH5Adapter(args.data_root).load_sequence(
+                max_samples=args.max_samples,
+                resolution=tuple(args.resolution) if args.resolution else None,
+            )
+        elif args.dataset == "hurricane":
+            sequence, timestamps = HurricaneAdapter(args.data_root).load_sequence(
+                max_samples=args.max_samples,
+                resolution=tuple(args.resolution) if args.resolution else None,
+            )
+        elif args.dataset == "nyx":
+            sequence, timestamps = NYXAdapter(args.data_root).load_sequence(
+                max_samples=args.max_samples,
+                resolution=tuple(args.resolution) if args.resolution else None,
+            )
+        elif args.dataset == "isot1024":
+            sequence, timestamps = Isotropic1024Adapter(args.data_root).load_sequence(
+                max_samples=args.max_samples,
+                resolution=tuple(args.resolution) if args.resolution else None,
+            )
+        elif args.dataset == "uvg":
+            sequence, timestamps = UVGAdapter(args.data_root).load_sequence(
+                max_samples=args.max_samples,
+                resolution=tuple(args.resolution) if args.resolution else None,
+            )
+        elif args.dataset == "s2c":
+            from compression_pipeline.adapters.s2c import S2CAdapter
+            adapter = S2CAdapter(args.data_root, tile_size=args.tile_size)
+            sequence, timestamps = adapter.load_sequence(
+                max_samples=args.max_samples,
+                resolution=tuple(args.resolution) if args.resolution else None,
+            )
+        elif args.dataset == "lysozyme":
+            sequence, timestamps = LysozymeAdapter(args.data_root).load_sequence(
+                max_samples=args.max_samples,
+                resolution=tuple(args.resolution) if args.resolution else None,
+            )
+        else:
+            raise SystemExit("CAESAR requires a dataset with sequential structure")
         max_n_frame = max(CAESAR_N_FRAMES[name] for name in caesar_models)
         if args.max_samples > 0 and args.max_samples < args.caesar_start_index + max_n_frame:
             raise SystemExit(
-                f"CAESAR requires at least {args.caesar_start_index + max_n_frame} contiguous ERA5 samples, "
+                f"CAESAR requires at least {args.caesar_start_index + max_n_frame} contiguous samples, "
                 f"got --max_samples {args.max_samples}"
             )
-        sequence, timestamps = ERA5Adapter(args.data_root).load_sequence(
-            max_samples=args.max_samples,
-            max_channels=args.max_channels,
-            resolution=tuple(args.resolution) if args.resolution else None,
-        )
         for model_name in caesar_models:
-            try:
-                print(f"[model] running {model_name} on continuous ERA5 sequence", flush=True)
-                result = run_caesar_sequence(
-                    sequence,
-                    timestamps,
-                    model_name=model_name,
-                    caesar_root=args.caesar_root,
-                    ckpt_dir=args.caesar_ckpt_dir,
-                    output_dir=output_dir,
-                    device=device,
-                    batch_size=args.batch_size,
-                    eb=args.caesar_eb,
-                    start_index=args.caesar_start_index,
-                )
-                summary.append(result)
-                print(json.dumps(result, indent=2), flush=True)
-            except Exception as exc:
-                summary.append({"model_name": "CAESAR", "model_id": model_name, "metric": "mse", "error": str(exc)})
-                print(f"[error] {model_name}: {exc}", flush=True)
-            finally:
-                summary_file.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+            for eb in args.caesar_eb:
+                try:
+                    print(f"[model] running {model_name} eb={eb} on {args.dataset} sequence", flush=True)
+                    result = run_caesar_sequence(
+                        sequence,
+                        timestamps,
+                        model_name=model_name,
+                        caesar_root=args.caesar_root,
+                        ckpt_dir=args.caesar_ckpt_dir,
+                        output_dir=output_dir,
+                        device=device,
+                        batch_size=args.batch_size,
+                        eb=eb,
+                        start_index=args.caesar_start_index,
+                    )
+                    result["eb"] = eb
+                    summary.append(result)
+                    print(json.dumps(result, indent=2), flush=True)
+                except Exception as exc:
+                    summary.append({"model_name": "CAESAR", "model_id": model_name, "metric": "mse", "eb": eb, "error": str(exc)})
+                    print(f"[error] {model_name} eb={eb}: {exc}", flush=True)
+                finally:
+                    summary_file.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
     jobs = list(image_model_jobs(args.project_root, non_caesar_models))
     if args.max_model_jobs > 0:
@@ -120,7 +207,13 @@ def main():
             print(f"[model] loading {job.model_id}", flush=True)
             model = job.loader(device)
             params = sum(p.numel() for p in model.parameters())
-            codec = None if job.model_name == "CRA5" else CompressAILikeCodec(model, device=device, divisor=job.divisor)
+            codec = None
+            if job.model_name != "CRA5":
+                if job.codec_cls is not None:
+                    codec_cls = job.codec_cls
+                else:
+                    codec_cls = CompressAILikeCodec if args.image_eval_mode == "real" else ForwardLikelihoodCodec
+                codec = codec_cls(model, device=device, divisor=job.divisor, **job.codec_kwargs)
             for sample in samples:
                 print(f"[sample] {job.model_id} {sample.sample_id}", flush=True)
                 if job.model_name == "CRA5":
@@ -133,6 +226,7 @@ def main():
                     "metric": job.metric,
                     "checkpoint": job.checkpoint,
                     "params": params,
+                    "image_eval_mode": args.image_eval_mode if job.model_name != "CRA5" else "native",
                 })
                 summary.append(result)
                 print(json.dumps(result, indent=2), flush=True)

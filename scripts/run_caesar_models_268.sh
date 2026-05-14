@@ -26,4 +26,5 @@ python -u scripts/test_caesar_era5.py \
   --model both \
   --gpu 0 \
   --batch_size 1 \
-  --max_channels 32
+  --max_channels 32 \
+  --eb 8e-3

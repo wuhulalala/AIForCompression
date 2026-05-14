@@ -4,7 +4,7 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -63,9 +63,10 @@ def validate_regular_timestamps(timestamps: list[str]) -> None:
     expected_delta = parsed[1] - parsed[0]
     if expected_delta.total_seconds() <= 0:
         raise ValueError(f"CAESAR timestamps must be strictly increasing: {timestamps[:2]}")
+    tolerance = timedelta(microseconds=100)
     for left, right in zip(parsed[1:], parsed[2:]):
         delta = right - left
-        if delta != expected_delta:
+        if abs(delta - expected_delta) > tolerance:
             raise ValueError(f"CAESAR requires a regular contiguous time window, got timestamps={timestamps}")
 
 
@@ -163,8 +164,16 @@ def _parse_timestamp(timestamp: str) -> datetime:
     normalized = timestamp.replace("Z", "+00:00")
     try:
         return datetime.fromisoformat(normalized)
-    except ValueError as exc:
-        raise ValueError(f"Unsupported timestamp format for CAESAR: {timestamp}") from exc
+    except ValueError:
+        pass
+    # Tomography angle timestamps: angle_X.XXXX → treat as seconds from epoch
+    if timestamp.startswith("angle_"):
+        try:
+            angle_sec = float(timestamp.removeprefix("angle_"))
+            return datetime(2000, 1, 1) + timedelta(seconds=angle_sec)
+        except ValueError:
+            pass
+    raise ValueError(f"Unsupported timestamp format for CAESAR: {timestamp}")
 
 
 def _count_caesar_params(compressor: Any, model_name: str) -> int:

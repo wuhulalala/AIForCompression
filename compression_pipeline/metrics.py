@@ -9,7 +9,7 @@ def calculate_psnr(original: np.ndarray, reconstructed: np.ndarray) -> tuple[flo
     orig64 = original.astype(np.float64)
     recon64 = reconstructed.astype(np.float64)
     mse = float(np.mean((orig64 - recon64) ** 2))
-    if mse < 1e-12:
+    if mse < 1e-30:
         return float("inf"), mse
     data_range = float(orig64.max() - orig64.min())
     if data_range < 1e-8:

@@ -129,3 +129,68 @@ python scripts/run_dataset_compression.py \
 ```
 
 可以用 `--caesar_start_index` 选择连续窗口的起点。Runner 会检查窗口内 timestamp 是否按固定时间间隔递增，避免把不连续时间片送进 CAESAR。
+
+## 运行 DCVC-FM
+
+ERA5 上的视频 intra smoke test 目前走单独脚本，不走 `run_dataset_compression.py`。该脚本会把 268 个通道按 3 通道分组、逐组做 min-max 归一化后送入 `DCVC-FM` 的 image/intra model：
+
+```bash
+python scripts/test_video_intra_era5.py \
+  --data_root /data/run01/scxj523/zsh/project/Data/ERA5/2024 \
+  --output_dir unified_results/video_intra_era5 \
+  --model DCVC_FM \
+  --dcvc_checkpoint /data/run01/scxj523/zsh/project/AIForCompression/checkpoints/dcvc-fm/cvpr2024_image.pth.tar \
+  --max_samples 1
+```
+
+输出写入 `summary.json`，模型名会标记为 `DCVC_FM_Intra_q{0,21,42,63}`。
+
+如果要在集群上做 smoke test：
+
+```bash
+sbatch scripts/run_video_models_268.sh
+```
+
+`DCVC-FM` 需要单独准备权重目录 `checkpoints/dcvc-fm/`，至少包含：
+
+- `cvpr2024_image.pth.tar`
+- `cvpr2024_video.pth.tar`（如果后续要跑 video/P-frame 路径）
+
+## 运行 DCVC-RT / DCMVC（Kodak 图像压缩）
+
+DCVC-RT 和 DCMVC 都已通过 compression pipeline 接入，使用其 intra（图像）模型，可用于 Kodak 数据集。两个模型均不支持 CompressAI API，使用自定义 codec 包装器。
+
+DCVC-RT 需要 GPU（依赖 CUDA 推理扩展）。DCMVC 支持 CPU 和 GPU。
+
+```bash
+python scripts/run_dataset_compression.py \
+  --dataset kodak \
+  --data_root /data/run01/scxj523/zsh/project/Data/Kodac \
+  --output_dir unified_results/kodak_dcvc_dcmvc \
+  --models DCVC-RT DCMVC \
+  --max_samples 24
+```
+
+两个模型各有多个质量等级：
+- **DCVC-RT** (`DCVC_RT_Intra_q{0,21,42,63}`)：4 个 qp 等级，权重 `checkpoints/dcvc-rt/cvpr2025_image.pth.tar`
+- **DCMVC** (`DCMVC_Intra_q{0,1,2,3}`)：4 个 q_index 等级，权重 `checkpoints/dcmvc/cvpr2023_image_psnr.pth.tar`
+
+只测试单个模型：
+
+```bash
+# 仅 DCVC-RT
+python scripts/run_dataset_compression.py \
+  --dataset kodak \
+  --data_root /data/run01/scxj523/zsh/project/Data/Kodac \
+  --output_dir unified_results/kodak_dcvc_rt \
+  --models DCVC-RT \
+  --max_samples 24
+
+# 仅 DCMVC
+python scripts/run_dataset_compression.py \
+  --dataset kodak \
+  --data_root /data/run01/scxj523/zsh/project/Data/Kodac \
+  --output_dir unified_results/kodak_dcmvc \
+  --models DCMVC \
+  --max_samples 24
+```
